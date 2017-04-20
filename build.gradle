@@ -1,12 +1,20 @@
+buildscript {
+    repositories { jcenter() }
+    dependencies {
+        classpath 'com.bmuschko:gradle-docker-plugin:3.0.6'
+    }
+}
+
 apply plugin: 'java'
 apply plugin: 'jetty'
 apply plugin: 'maven'
 apply plugin: 'war'
+apply plugin: 'com.bmuschko.docker-remote-api'
 
 group = 'org.jenkins-ci'
 description = 'User self-service account management app'
 version = '2.5'
-
+defaultTasks 'container'
 
 repositories {
     jcenter()
@@ -43,4 +51,11 @@ jettyRun {
 
 war {
     dependsOn check
+}
+
+task container(type: com.bmuschko.gradle.docker.tasks.image.DockerBuildImage) {
+    description 'Build the account-app container'
+    inputDir projectDir
+    tag 'jenkinsciinfra/account-app'
+    dependsOn war
 }
