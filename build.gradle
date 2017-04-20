@@ -2,6 +2,7 @@ buildscript {
     repositories { jcenter() }
     dependencies {
         classpath 'com.bmuschko:gradle-docker-plugin:3.0.6'
+        classpath 'org.ajoberstar:gradle-git:1.7.1'
     }
 }
 
@@ -10,6 +11,14 @@ apply plugin: 'jetty'
 apply plugin: 'maven'
 apply plugin: 'war'
 apply plugin: 'com.bmuschko.docker-remote-api'
+apply plugin: 'org.ajoberstar.grgit'
+
+import org.ajoberstar.grgit.Grgit
+String containerVersion = Grgit.open('.')?.head()?.abbreviatedId
+
+if (System.env.BUILD_ID) {
+    containerVersion = "${System.env.BUILD_ID}-${containerVersion}"
+}
 
 group = 'org.jenkins-ci'
 description = 'User self-service account management app'
@@ -56,6 +65,13 @@ war {
 task container(type: com.bmuschko.gradle.docker.tasks.image.DockerBuildImage) {
     description 'Build the account-app container'
     inputDir projectDir
-    tag 'jenkinsciinfra/account-app'
+    tag "jenkinsciinfra/account-app:${containerVersion}"
     dependsOn war
+}
+
+task pushContainer(type: com.bmuschko.gradle.docker.tasks.image.DockerPushImage) {
+    description 'Publish the account-app container'
+    imageName 'jenkinsciinfra/account-app'
+    tag containerVersion
+    dependsOn container
 }

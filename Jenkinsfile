@@ -12,8 +12,8 @@ node('docker') {
         timestamps {
             deleteDir()
             checkout scm
-            docker.image('java:8-alpine').inside {
-                sh './gradlew --no-daemon --info war'
+            docker.image('java:8-alpine').inside('-v /var/run/docker.sock:/var/run/docker.sock') {
+                sh './gradlew --no-daemon --info'
                 archiveArtifacts artifacts: 'build/libs/*.war', fingerprint: true
             }
         }
@@ -28,21 +28,12 @@ node('docker') {
         }
     }
 
-    def container
-    stage('Prepare Container') {
-        timestamps {
-            sh 'git rev-parse HEAD > GIT_COMMIT'
-            shortCommit = readFile('GIT_COMMIT').take(6)
-            def imageTag = "${env.BUILD_ID}-build${shortCommit}"
-            echo "Creating the container ${imageName}:${imageTag}"
-            container = docker.build("${imageName}:${imageTag}")
-        }
-    }
-
     /* Assuming we're not inside of a pull request or multibranch pipeline */
     if (!(env.CHANGE_ID || env.BRANCH_NAME)) {
         stage('Publish container') {
-            timestamps { container.push() }
+            docker.image('java:8-alpine').inside('-v /var/run/docker.sock:/var/run/docker.sock') {
+                sh './gradlew --no-daemon --info push'
+            }
         }
     }
 }
