@@ -8,6 +8,9 @@ properties([
 ])
 
 node('docker') {
+    stage('Do something') {
+        echo 'Hello, Day of Jenkins'
+    }
     stage('Build') {
         timestamps {
             checkout scm
